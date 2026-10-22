@@ -7,6 +7,10 @@ import os
 def create_app(config=None):
     app = Flask(__name__)
 
+    from app.routes.goal_routes import goals_bp
+
+    app.register_blueprint(goals_bp)
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
 
