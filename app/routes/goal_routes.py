@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, make_response, request
 from app.models.goal import Goal
 from app.db import db
+from app.models.task import Task
 
 
 goals_bp = Blueprint("goals_bp", __name__, url_prefix="/goals")
@@ -83,3 +84,51 @@ def delete_goal(goal_id):
     response = make_response("", 204)
     response.mimetype = "application/json"
     return response
+
+
+@goals_bp.post("/<goal_id>/tasks")
+def assign_tasks_to_goal(goal_id):
+    goal = validate_goal(goal_id)
+    request_body = request.get_json()
+
+    if not isinstance(request_body, dict) or not isinstance(
+        request_body.get("task_ids"), list
+    ):
+        return {"details": "Invalid data"}, 400
+
+    tasks = []
+
+    for task_id in request_body["task_ids"]:
+        if type(task_id) is not int:
+            return {"details": "Task IDs must be integers"}, 400
+
+        task = db.session.get(Task, task_id)
+
+        if task is None:
+            return {"details": f"Task {task_id} not found"}, 404
+
+        tasks.append(task)
+
+    goal.tasks = tasks
+
+    db.session.commit()
+
+    response = goal.to_dict()
+    response.pop("title", None)
+    response["task_ids"] = [task.id for task in goal.tasks]
+
+    return response, 200
+
+
+@goals_bp.get("/<goal_id>/tasks")
+def get_tasks_for_goal(goal_id):
+    goal = validate_goal(goal_id)
+
+    goal_dict = goal.to_dict()
+
+    goal_dict["tasks"] = []
+
+    for task in goal.tasks:
+        goal_dict["tasks"].append(task.to_dict())
+
+    return goal_dict, 200
