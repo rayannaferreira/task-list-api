@@ -1,29 +1,30 @@
-from flask import Blueprint, request, jsonify
-from app.models.task import Task
-from app.db import db
 from datetime import datetime
-import requests
 import os
+
+from flask import Blueprint, jsonify, request
+import requests
+
+from app.db import db
+from app.models.task import Task
+from app.routes.route_utilities import create_model, validate_model
+
 
 tasks_bp = Blueprint("tasks", __name__)
 
 
-@tasks_bp.route("/tasks", methods=["POST"])
+@tasks_bp.post("/tasks")
 def create_task():
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict) or "title" not in data or "description" not in data:
         return jsonify({"details": "Invalid data"}), 400
 
-    new_task = Task.from_dict(data)
+    task = create_model(Task, data)
 
-    db.session.add(new_task)
-    db.session.commit()
-
-    return jsonify(new_task.to_dict()), 201
+    return jsonify(task.to_dict()), 201
 
 
-@tasks_bp.route("/tasks", methods=["GET"])
+@tasks_bp.get("/tasks")
 def get_tasks():
     sort = request.args.get("sort")
     query = db.select(Task)
@@ -39,23 +40,16 @@ def get_tasks():
     return jsonify(tasks_list), 200
 
 
-@tasks_bp.route("/tasks/<int:task_id>", methods=["GET"])
+@tasks_bp.get("/tasks/<task_id>")
 def get_task(task_id):
-    task = db.session.get(Task, task_id)
-
-    if task is None:
-        return jsonify({"details": "Task not found"}), 404
+    task = validate_model(Task, task_id)
 
     return jsonify(task.to_dict()), 200
 
 
-@tasks_bp.route("/tasks/<int:task_id>", methods=["PUT"])
+@tasks_bp.put("/tasks/<task_id>")
 def update_task(task_id):
-    task = db.session.get(Task, task_id)
-
-    if task is None:
-        return jsonify({"details": "Task not found"}), 404
-
+    task = validate_model(Task, task_id)
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict) or "title" not in data or "description" not in data:
@@ -69,12 +63,9 @@ def update_task(task_id):
     return "", 204, {"Content-Type": "application/json"}
 
 
-@tasks_bp.route("/tasks/<int:task_id>", methods=["DELETE"])
+@tasks_bp.delete("/tasks/<task_id>")
 def delete_task(task_id):
-    task = db.session.get(Task, task_id)
-
-    if task is None:
-        return jsonify({"details": "Task not found"}), 404
+    task = validate_model(Task, task_id)
 
     db.session.delete(task)
     db.session.commit()
@@ -82,12 +73,9 @@ def delete_task(task_id):
     return "", 204, {"Content-Type": "application/json"}
 
 
-@tasks_bp.route("/tasks/<int:task_id>/mark_complete", methods=["PATCH"])
+@tasks_bp.patch("/tasks/<task_id>/mark_complete")
 def mark_complete(task_id):
-    task = db.session.get(Task, task_id)
-
-    if task is None:
-        return jsonify({"details": "Task not found"}), 404
+    task = validate_model(Task, task_id)
 
     task.completed_at = datetime.now()
     db.session.commit()
@@ -102,17 +90,14 @@ def mark_complete(task_id):
         timeout=10,
     )
 
-    return jsonify(task.to_dict()), 204
+    return "", 204, {"Content-Type": "application/json"}
 
 
-@tasks_bp.route("/tasks/<int:task_id>/mark_incomplete", methods=["PATCH"])
+@tasks_bp.patch("/tasks/<task_id>/mark_incomplete")
 def mark_incomplete(task_id):
-    task = db.session.get(Task, task_id)
-
-    if task is None:
-        return jsonify({"details": "Task not found"}), 404
+    task = validate_model(Task, task_id)
 
     task.completed_at = None
     db.session.commit()
 
-    return jsonify(task.to_dict()), 204
+    return "", 204, {"Content-Type": "application/json"}
