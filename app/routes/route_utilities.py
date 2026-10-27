@@ -1,5 +1,4 @@
 from flask import abort, make_response
-
 from app.db import db
 
 

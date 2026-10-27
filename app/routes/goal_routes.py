@@ -1,5 +1,4 @@
 from flask import Blueprint, make_response, request
-
 from app.db import db
 from app.models.goal import Goal
 from app.models.task import Task

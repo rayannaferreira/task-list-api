@@ -1,9 +1,7 @@
 from datetime import datetime
 import os
-
 from flask import Blueprint, jsonify, request
 import requests
-
 from app.db import db
 from app.models.task import Task
 from app.routes.route_utilities import create_model, validate_model
