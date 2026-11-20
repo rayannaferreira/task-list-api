@@ -8,7 +8,7 @@ from app.routes.route_utilities import (
     create_model,
     validate_model,
     get_models_with_sort_response,
-    call_slack_api,
+    call_slack_api
 )
 
 
@@ -71,7 +71,6 @@ def mark_complete(task_id):
     call_slack_api(task)
 
     return Response(status=204, mimetype="application/json")
-
 
 @bp.patch("/tasks/<task_id>/mark_incomplete")
 def mark_incomplete(task_id):
